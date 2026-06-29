@@ -1,0 +1,167 @@
+Design Direction & Brand Identity
+Brand Personality:
+
+Primary: Professional yet energetic - serious business tool with momentum/growth energy
+Secondary: Mobile-first confidence - built for busy business owners on the go
+Tertiary: Data clarity - complex metrics made simple and actionable
+
+Visual Design System:
+Color Palette:
+css/* Primary Brand Colors */
+--momentum-blue: #2563eb      /* Trust, stability, business focus */
+--momentum-green: #059669     /* Growth, positive change, success */
+--momentum-red: #dc2626       /* Urgency, negative change, alerts */
+
+/* Semantic KPI Colors */
+--positive-growth: #10b981    /* ▲ Green for positive changes */
+--negative-decline: #ef4444   /* ▼ Red for negative changes */
+--neutral-stable: #6b7280     /* → Gray for no change */
+
+/* Interface Colors */
+--background: #f8fafc         /* Clean, minimal background */
+--surface: #ffffff            /* Card backgrounds */
+--text-primary: #1e293b       /* Dark, readable text */
+--text-secondary: #64748b     /* Subtle secondary text */
+--border: #e2e8f0            /* Subtle borders and dividers */
+Typography Hierarchy:
+css/* Headings */
+h1: 32px, font-weight: 700    /* Page titles */
+h2: 24px, font-weight: 600    /* Section headers */
+h3: 20px, font-weight: 600    /* Card titles */
+
+/* Data Display */
+.kpi-value: 36px, font-weight: 700, tabular-nums
+.kpi-change: 14px, font-weight: 600
+.kpi-label: 14px, font-weight: 500
+
+/* Body Text */
+body: 16px, font-weight: 400
+small: 14px, font-weight: 400
+📱 Key UI/UX Design Decisions
+1. Mobile-First Dashboard Design:
+html<!-- Executive-focused KPI cards -->
+<div class="kpi-grid">
+  <div class="kpi-card">
+    <div class="kpi-header">
+      <span class="kpi-label">Revenue</span>
+      <span class="trend-icon">📈</span>
+    </div>
+    <div class="kpi-value">$612k</div>
+    <div class="kpi-change positive">
+      <span class="change-symbol">▲</span>
+      <span class="change-value">3.2%</span>
+      <span class="change-period">vs last week</span>
+    </div>
+    <div class="mini-chart">
+      <!-- Sparkline chart -->
+    </div>
+  </div>
+</div>
+2. Setup Wizard Flow:
+Step 1: Industry Selection (NAICS)
+├── Visual industry icons
+├── Entity count per industry
+└── "Why this matters" explanations
+
+Step 2: KPI Recommendation  
+├── AI-generated KPI cards
+├── Drag-and-drop to select 7
+└── Data source indicators
+
+Step 3: Data Collection Setup
+├── Manual vs API toggle per KPI
+├── Team member assignments
+└── Integration setup wizards
+
+Step 4: SMS Recipients
+├── Phone number validation
+├── Test SMS functionality  
+└── Delivery schedule setup
+3. SMS Preview Interface:
+html<!-- Realistic phone mockup -->
+<div class="phone-mockup">
+  <div class="phone-screen">
+    <div class="sms-message">
+      <div class="message-header">
+        <span class="sender">MomentumTxt</span>
+        <span class="time">Fri 8:00 AM</span>
+      </div>
+      <div class="message-body">
+        W18 Momentum Update
+        • Revenue $612k ▲3%
+        • Profit Margin 28% ▼2%
+        • New Customers 14 ▲5
+        • Pipeline $67k ▲18%
+        • Outstanding A/R $28k ▼15%
+        • Team Utilization 87% ▲3%
+        • Customer Satisfaction 4.8⭐ ▲0.1
+      </div>
+    </div>
+  </div>
+</div>
+🎯 Specific Design Recommendations:
+Answer to Agent's Questions:
+1. Brand Direction:
+Professional with momentum energy - Think "Bloomberg Terminal meets modern SaaS" but approachable for small business owners.
+2. User Priorities:
+
+Business owners (viewing SMS and dashboard) - 60% priority
+Team members (data entry) - 25% priority
+Admins (setup and configuration) - 15% priority
+
+3. Mobile Usage:
+Critical - Dashboard must be fully functional on mobile. Business owners check metrics on phones constantly.
+4. Data Density:
+Focused displays - Each KPI gets breathing room. Better to scroll than overwhelm.
+5. Visual Style:
+Inspiration: Linear, Stripe Dashboard, Notion - clean, modern, data-focused but not sterile.
+🚀 Recommended Design System Components:
+Core Components to Build:
+typescript// KPI Display Components
+<KPICard value="$612k" change={3.2} trend="up" label="Revenue" />
+<KPIGrid kpis={weeklyKPIs} />
+<TrendChart data={historicalData} />
+
+// Navigation Components  
+<Sidebar navigation={routes} />
+<MobileNav />
+<Breadcrumbs path={currentPath} />
+
+// Form Components
+<IndustrySelector naicsCodes={industries} />
+<KPISelector recommendations={aiKPIs} selected={userKPIs} />
+<PhoneInput validation={smsValidation} />
+
+// SMS Components
+<SMSPreview message={formattedKPIs} />
+<RecipientManager contacts={smsRecipients} />
+<DeliverySchedule frequency="weekly" />
+Key Design Patterns:
+
+Progressive disclosure - Show basics first, expand on demand
+Contextual help - Tooltips explaining KPI meanings
+Status indicators - Clear success/error states
+Loading states - Skeleton screens during data fetching
+Empty states - Helpful guidance when no data exists
+
+📋 My Recommendation to the Agent:
+Start with these 3 core screens:
+1. Dashboard (Primary User Interface)
+
+Clean KPI grid with trend indicators
+Weekly SMS preview
+Quick actions (send test SMS, add data, etc.)
+
+2. Setup Wizard (Onboarding Experience)
+
+Multi-step flow with clear progress
+Industry selection with visual appeal
+KPI recommendation with AI explanation
+
+3. SMS Management (Core Value Prop)
+
+Phone mockup with realistic message preview
+Recipient management with test functionality
+Delivery history and success metrics
+
+Focus on mobile-first responsive design and use the color palette/typography I've outlined above.

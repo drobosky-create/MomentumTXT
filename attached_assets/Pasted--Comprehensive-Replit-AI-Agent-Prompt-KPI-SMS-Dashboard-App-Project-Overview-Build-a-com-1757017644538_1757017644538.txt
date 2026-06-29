@@ -1,0 +1,408 @@
+# Comprehensive Replit AI Agent Prompt: KPI SMS Dashboard App
+
+## 🎯 Project Overview
+Build a complete KPI SMS automation platform similar to CEOTXT that sends weekly SMS summaries of 7 key business metrics to executives. This should be a full-stack web application with both a user interface for configuration and automated SMS delivery.
+
+## 🏗️ Technical Architecture Required
+
+### Backend: Python + Flask
+- **Framework**: Flask web application with proper routing
+- **Database**: SQLite/PostgreSQL for storing user data, KPI configurations, and historical metrics
+- **Background Jobs**: Python `schedule` library for weekly automation
+- **APIs**: RESTful endpoints for frontend interaction
+- **Error Handling**: Comprehensive try/catch blocks and logging
+
+### Frontend: HTML/CSS/JavaScript (or React if preferred)
+- **Dashboard**: Clean, modern interface for viewing KPIs and trends
+- **Configuration Pages**: Forms to set up KPIs, recipients, and data sources
+- **Authentication**: User login/logout system
+- **Responsive Design**: Works on desktop and mobile
+
+### External Integrations
+- **SMS Service**: Twilio API integration (account_sid and auth_token via environment variables)
+- **Data Sources**: At least 3 API integrations from: Stripe, HubSpot, QuickBooks, Google Analytics
+- **Security**: Environment variables for all API keys
+
+## 📊 Core Features to Implement
+
+### 1. User Management System
+- User registration and login with password hashing
+- Company/organization management (multi-tenant ready)
+- Role-based permissions (admin, viewer)
+
+### 2. KPI Configuration Dashboard
+- **Available KPIs to choose from**:
+  - Revenue (weekly total and % change)
+  - Customer Acquisition Cost (CAC)
+  - Churn Rate
+  - Net Promoter Score (NPS)
+  - Cash Flow/Bank Balance
+  - Gross Margin
+  - Sales Pipeline Value
+- **KPI Setup Form**: Allow users to select 7 KPIs and configure data sources
+- **Data Source Configuration**: Forms to input API credentials for each integration
+
+### 3. SMS Recipients Management
+- Add/remove phone numbers for SMS delivery
+- Test SMS functionality
+- SMS delivery history and status tracking
+
+### 4. Data Collection Engine
+- **Stripe Integration**: Revenue, subscription metrics, customer counts
+- **HubSpot Integration**: Deals, pipeline, customer data
+- **QuickBooks Integration**: Financial data, expenses, profit margins
+- **Manual Input Option**: For KPIs that can't be automatically collected
+
+### 5. Weekly SMS Automation
+- **Scheduler**: Run every Friday at 8:00 AM (configurable)
+- **Message Format**: 
+```
+W18 Summary
+• Revenue $612k ▲3%
+• CAC $186 ▼4%
+• Churn 1.9% ▲0.2
+• NPS 62 ▲1
+• Cash $1.9M
+• Gross Margin 63% ▲2%
+• Pipeline $3.1M ▲5%
+```
+- **Error Notifications**: Email alerts if SMS delivery fails
+
+### 6. Historical Data & Analytics
+- Store weekly KPI snapshots in database
+- Trend analysis and charts
+- Export capabilities (CSV/PDF)
+- Performance comparisons (week-over-week, month-over-month)
+
+## 🔧 Technical Implementation Details
+
+### Database Schema
+```sql
+-- Users and Companies
+CREATE TABLE companies (id, name, created_at);
+CREATE TABLE users (id, company_id, email, password_hash, role);
+
+-- KPI Configuration
+CREATE TABLE kpi_definitions (id, company_id, kpi_name, data_source, is_active);
+CREATE TABLE data_source_configs (id, company_id, source_name, api_credentials_encrypted);
+
+-- Historical Data
+CREATE TABLE kpi_snapshots (id, company_id, week_number, year, kpi_name, value, previous_value, change_percent, created_at);
+
+-- SMS Management
+CREATE TABLE sms_recipients (id, company_id, name, phone_number, is_active);
+CREATE TABLE sms_delivery_log (id, company_id, recipient_id, message_content, status, sent_at);
+```
+
+### Key Python Libraries to Use
+```python
+# Core Framework
+from flask import Flask, render_template, request, jsonify, session
+from flask_sqlalchemy import SQLAlchemy
+from flask_bcrypt import Bcrypt
+
+# Background Jobs
+import schedule
+import time
+from threading import Thread
+
+# External APIs
+import requests  # For API calls
+from twilio.rest import Client  # SMS delivery
+
+# Data Processing
+import pandas as pd  # For calculations
+from datetime import datetime, timedelta
+```
+
+## 💡 Data Collection Implementation Strategy
+
+### **API Integration Classes (Priority Order)**
+
+#### 1. **Stripe Collector** (Revenue Metrics)
+```python
+class StripeCollector:
+    def collect_revenue_data(self, api_key, start_date, end_date):
+        # Weekly revenue from successful charges
+        # MRR from subscription data  
+        # Customer count and growth
+        # Revenue growth calculations
+```
+
+#### 2. **HubSpot Collector** (Sales & Pipeline)
+```python
+class HubSpotCollector:
+    def collect_sales_data(self, api_key):
+        # Pipeline value from deals API
+        # Lead conversion rates
+        # Customer acquisition metrics
+        # Deal stage analysis
+```
+
+#### 3. **QuickBooks Collector** (Financial Health)
+```python
+class QuickBooksCollector:
+    def collect_financial_data(self, oauth_token):
+        # Cash flow from bank accounts
+        # Profit margins from P&L
+        # Expense tracking
+        # ROE calculations
+```
+
+#### 4. **Manual Input System** (For non-API KPIs)
+```python
+class ManualKPICollector:
+    def collect_survey_data(self, company_id):
+        # NPS scores from user input
+        # Employee satisfaction ratings
+        # Customer feedback metrics
+        # Manual data entry with validation
+```
+
+### **Fallback & Error Handling Strategy**
+
+#### **Smart Defaults for Missing Data**:
+- If API fails, use last known value with "⚠️" indicator
+- Allow manual override for any KPI during outages
+- Email notifications when data collection fails
+- Graceful degradation (send SMS with available metrics only)
+
+#### **Data Validation Rules**:
+- Revenue must be positive numbers
+- Percentages must be 0-100 (or 0-1 for decimals)
+- Growth rates flagged if >50% change week-over-week
+- Missing data clearly marked in SMS format
+
+### **User Experience for Data Setup**:
+
+#### **Onboarding Wizard**:
+1. **Select 7 KPIs** from categorized library (drag & drop interface)
+2. **Connect Data Sources** - OAuth flows for each integration
+3. **Set Manual Input Schedule** - Weekly input reminders for non-API metrics
+4. **Test Data Collection** - Preview KPI values before going live
+5. **Configure SMS Recipients** - Phone numbers and delivery schedule
+
+#### **KPI Configuration Screen**:
+- Toggle between **Automatic** (API) vs **Manual** data collection
+- **Data Source Status** indicators (green/red for each integration)
+- **Preview Mode** - See what SMS will look like with current data
+- **Historical View** - Last 12 weeks of each KPI for validation
+
+## 🎨 UI/UX Requirements
+
+### Dashboard Layout
+- **Header**: Company logo, user menu, navigation
+- **Main Dashboard**: 7 KPI cards showing current values and trends
+- **Sidebar**: Navigation to Settings, Recipients, History, API Config
+- **Charts**: Simple line charts showing 12-week trends
+
+### Configuration Pages
+- **KPI Setup**: Drag-and-drop interface to select and prioritize 7 KPIs
+- **Data Sources**: Tab-based interface for each API integration
+- **SMS Settings**: Table of recipients with add/edit/delete functionality
+- **Schedule Config**: Time zone and delivery schedule settings
+
+### Visual Design
+- Clean, professional design similar to modern SaaS dashboards
+- Color coding: Green for positive changes, red for negative
+- Mobile-responsive layout
+- Loading states and error messages
+
+## 🔐 Security & Configuration
+
+### Environment Variables Required
+```bash
+TWILIO_ACCOUNT_SID=your_account_sid
+TWILIO_AUTH_TOKEN=your_auth_token
+STRIPE_API_KEY=your_stripe_key
+HUBSPOT_API_KEY=your_hubspot_key
+QUICKBOOKS_CLIENT_ID=your_qb_client_id
+QUICKBOOKS_CLIENT_SECRET=your_qb_secret
+DATABASE_URL=your_database_url
+SECRET_KEY=your_flask_secret_key
+```
+
+### Security Features
+- Password hashing with bcrypt
+- Session management for user authentication
+- API key encryption in database
+- Input validation and SQL injection prevention
+- Rate limiting for API endpoints
+
+## 📱 Deployment Requirements
+
+### Replit Configuration
+- **Run Command**: `python app.py`
+- **Environment**: Python 3.x with all required packages
+- **Database**: SQLite for development, PostgreSQL for production
+- **Background Process**: Threading for SMS scheduler
+
+### Testing Features
+- SMS test functionality with sandbox mode
+- Data validation with sample datasets
+- Error simulation and recovery testing
+
+## 🚀 Advanced Features (If Time Permits)
+
+### Multi-Channel Delivery
+- Slack integration as SMS alternative
+- Email summaries for detailed reports
+- Push notifications
+
+### Advanced Analytics
+- Predictive trends using simple linear regression
+- Goal setting and progress tracking
+- Automated alerts for significant changes (>15% variance)
+
+### Integration Marketplace
+- Plugin system for additional data sources
+- Custom KPI formula builder
+- Webhook support for real-time data
+
+## 📋 Success Criteria
+
+### Functional Requirements
+✅ User can register, login, and configure 7 KPIs
+✅ System automatically collects data from at least 3 external APIs
+✅ Weekly SMS sent with proper formatting and change indicators
+✅ Dashboard displays current KPIs and historical trends
+✅ All data is properly stored and retrievable
+
+### Technical Requirements
+✅ Clean, maintainable Python/Flask codebase
+✅ Responsive web interface
+✅ Proper error handling and logging
+✅ Secure API key management
+✅ Background job scheduling works reliably
+
+### User Experience Requirements
+✅ Intuitive setup process (< 10 minutes from signup to first SMS)
+✅ Professional SMS format that's easy to read
+✅ Dashboard loads quickly (< 3 seconds)
+✅ Mobile-friendly interface
+✅ Clear error messages and status indicators
+
+## 🎯 Example SMS Output Goal
+```
+W18 Summary
+• Revenue $612k ▲3%
+• CAC $186 ▼4%  
+• Churn 1.9% ▲0.2
+• NPS 62 ▲1
+• Cash $1.9M
+• Gross Margin 63% ▲2%
+• Pipeline $3.1M ▲5%
+
+Powered by [Your App Name]
+```
+
+---
+
+---
+
+**🚀 CRITICAL IMPLEMENTATION INSTRUCTIONS FOR REPLIT AGENT:**
+
+**THIS IS A COMMERCIAL SAAS PRODUCT targeting 17.8 million US businesses with $4B+ market potential**
+
+## **DEVELOPMENT PRIORITY ORDER:**
+
+### **Phase 1: Core MVP (Week 1-2)**
+1. **NAICS Industry Selection Interface** - 19 industry dropdown with entity counts
+2. **AI KPI Generation System** - OpenAI/Claude API integration for industry-specific KPI recommendations  
+3. **Flexible KPI Configuration** - User selects 7 KPIs from AI-generated 15-20 options
+4. **Manual Data Entry System** - Simple forms for team-based KPI input
+5. **SMS Delivery Foundation** - Twilio integration with multi-provider failover
+6. **Basic User Management** - Registration, login, company setup
+
+### **Phase 2: Monetization (Week 3-4)**  
+1. **Stripe Subscription Billing** - $39 Starter, $79 Professional, $149 Business tiers
+2. **14-day Free Trial** - No credit card required, automated conversion prompts
+3. **Usage Tracking & Limits** - SMS recipient limits, plan enforcement  
+4. **Professional Landing Page** - Industry-agnostic with NAICS targeting
+5. **Customer Onboarding Flow** - Industry → KPIs → Data Sources → Team Setup → SMS Recipients
+
+### **Phase 3: Automation & Scale (Week 5-8)**
+1. **QuickBooks Integration** - Most universal business system integration
+2. **Stripe Payment Integration** - For revenue/transaction KPIs
+3. **Google Business Profile API** - For review/reputation KPIs  
+4. **Failure Protocol System** - Graceful degradation, backup SMS providers, email fallbacks
+5. **Team Collaboration** - Role-based permissions, data entry assignments, approval workflows
+
+## **TECHNICAL ARCHITECTURE REQUIREMENTS:**
+
+### **Use Replit's Built-in Capabilities:**
+- **Flask App Template** as foundation (DO NOT build from scratch)
+- **Replit Database** for all data storage (PostgreSQL preferred)
+- **Replit Auth System** for user management
+- **Environment Variables** for all API keys and sensitive data
+- **Replit Hosting** with auto-scaling enabled
+
+### **Essential Integrations:**
+```python
+# Priority API integrations (build in this order)
+api_integrations = {
+    1: 'OpenAI/Claude API for KPI generation',
+    2: 'Twilio SMS with failover providers', 
+    3: 'Stripe for subscription billing',
+    4: 'QuickBooks OAuth for financial data',
+    5: 'Stripe Connect for payment/revenue data',
+    6: 'Google Business Profile for reviews/ratings'
+}
+```
+
+## **SUCCESS CRITERIA:**
+
+### **Technical Benchmarks:**
+✅ **Complete signup → first SMS flow** takes < 10 minutes
+✅ **SMS delivery reliability** > 99.5% (with multi-provider failover)
+✅ **AI KPI generation** responds in < 5 seconds for any NAICS code
+✅ **Mobile-responsive** interface works perfectly on phones/tablets
+✅ **Subscription billing** handles trials, upgrades, failures automatically
+✅ **Data privacy compliant** - GDPR/CCPA deletion, encryption at rest
+✅ **Multi-tenant architecture** supports 10,000+ companies
+
+### **Business Benchmarks:**
+✅ **Trial-to-paid conversion** > 15% (industry average is 10-12%)
+✅ **Monthly churn rate** < 5% (good retention for SMB SaaS)
+✅ **Customer acquisition cost** < $50 through organic/content marketing
+✅ **Net Promoter Score** > 50 (strong customer advocacy)
+✅ **Time to value** < 48 hours (customer sees benefit quickly)
+✅ **Support ticket rate** < 2 per customer (intuitive product)
+
+### **Market Validation Targets:**
+✅ **Multi-industry success** - engagement across 5+ NAICS codes
+✅ **Word-of-mouth growth** - 20%+ of customers come from referrals  
+✅ **Expansion revenue** - 30%+ of customers upgrade plans within 6 months
+✅ **Industry penetration** - Become known solution in 2-3 target NAICS codes
+✅ **Competitive differentiation** - Clear advantages over generic dashboard tools
+
+## **LAUNCH STRATEGY:**
+
+### **Week 1-2: Build & Beta**
+- Complete MVP with 3-5 NAICS industry templates
+- Recruit 20 beta customers across different industries  
+- Manual SMS delivery for testing (validate core value prop)
+
+### **Week 3-4: Monetization**
+- Launch subscription billing and trial system
+- Professional landing page with industry targeting
+- Automated onboarding and SMS delivery
+
+### **Week 5-8: Scale & Validate** 
+- Add remaining NAICS industries (all 19 codes)
+- Build API integrations based on beta customer feedback
+- Marketing campaigns targeting highest-engagement industries
+
+### **Month 2-3: Market Domination**
+- Industry-specific marketing campaigns and content
+- Trade association partnerships and conference presence  
+- Referral program and viral growth mechanics
+- Advanced features based on customer success data
+
+---
+
+**BUILD THIS LIKE A $100M SAAS BUSINESS - because it can be.**
+
+**The market is 17.8 million businesses. The competition is virtually non-existent. The technology is proven. The demand is validated (CEOTXT exists at $795/month).**
+
+**This is your chance to build the definitive SMS business intelligence platform for American small businesses. Make it count.** 🚀

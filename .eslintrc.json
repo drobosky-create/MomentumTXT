@@ -1,0 +1,55 @@
+{
+  "env": {
+    "browser": true,
+    "es2021": true,
+    "node": true
+  },
+  "extends": [
+    "eslint:recommended",
+    "@typescript-eslint/recommended",
+    "plugin:react-hooks/recommended"
+  ],
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "ecmaFeatures": {
+      "jsx": true
+    },
+    "ecmaVersion": "latest",
+    "sourceType": "module"
+  },
+  "plugins": ["@typescript-eslint", "unused-imports", "react-refresh"],
+  "rules": {
+    // Automatically remove unused imports
+    "unused-imports/no-unused-imports": "error",
+    "unused-imports/no-unused-vars": [
+      "warn",
+      {
+        "vars": "all",
+        "varsIgnorePattern": "^_",
+        "args": "after-used",
+        "argsIgnorePattern": "^_"
+      }
+    ],
+    // Detect dead code
+    "@typescript-eslint/no-unused-vars": "off", // Let unused-imports handle this
+    "no-unreachable": "error",
+    "no-unused-expressions": "error",
+
+    // React specific
+    "react-refresh/only-export-components": ["warn", { "allowConstantExport": true }],
+    "react-hooks/rules-of-hooks": "error",
+    "react-hooks/exhaustive-deps": "warn",
+
+    // TypeScript strict rules
+    "@typescript-eslint/no-explicit-any": "warn",
+    "@typescript-eslint/no-unused-expressions": "error",
+    "@typescript-eslint/prefer-const": "error",
+    "@typescript-eslint/no-var-requires": "error",
+
+    // Code quality
+    "no-console": "warn",
+    "prefer-const": "error",
+    "no-var": "error"
+  },
+  "ignorePatterns": ["dist/**", "build/**", "node_modules/**", "*.js"]
+}
