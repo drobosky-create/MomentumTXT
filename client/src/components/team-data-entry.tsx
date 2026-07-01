@@ -54,7 +54,7 @@ export default function TeamDataEntry({ currentWeek }: TeamDataEntryProps) {
   const [showAssignDialog, setShowAssignDialog] = useState(false);
 
   const { data: teamAssignments = [], isLoading } = useQuery<TeamAssignment[]>({
-    queryKey: ["/api/team-assignments", currentWeek],
+    queryKey: ["/api/team-assignments"],
     retry: false,
   });
 

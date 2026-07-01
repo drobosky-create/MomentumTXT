@@ -4,6 +4,7 @@ import { sendblueService } from "./sendblue";
 import { db } from "../db";
 import { smsDeliveryLog, activities, sessions, type KpiDefinition, type KpiSnapshot } from "@shared/schema";
 import { lt } from "drizzle-orm";
+import { getCurrentWeekInfo } from "../utils/dateUtils";
 
 class SchedulerService {
   private isStarted = false;
@@ -51,9 +52,9 @@ class SchedulerService {
 
   private async sendWeeklySMS() {
     try {
-      const currentDate = new Date();
-      const currentWeek = this.getWeekNumber(currentDate);
-      const currentYear = currentDate.getFullYear();
+      // Use the same ISO week calc that KPI snapshots are stored under
+      // (server/utils/dateUtils), otherwise we query a week with no data.
+      const { weekNumber: currentWeek, year: currentYear } = getCurrentWeekInfo();
 
       // Get all companies that have active KPIs and SMS recipients
       const companies = await this.getActiveCompanies();
@@ -341,12 +342,6 @@ class SchedulerService {
       console.error("Failed to cleanup old activities:", error);
       return 0;
     }
-  }
-
-  private getWeekNumber(date: Date): number {
-    const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
-    const pastDaysOfYear = (date.getTime() - firstDayOfYear.getTime()) / 86400000;
-    return Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
   }
 
   // Manual trigger methods for testing

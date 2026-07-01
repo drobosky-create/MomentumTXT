@@ -2,6 +2,7 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./clerk";
+import { smsRateLimiter, aiRateLimiter } from "./middleware/rateLimit";
 import { openaiService } from "./services/openai";
 import { sendblueService } from "./services/sendblue";
 import { stripeService } from "./services/stripe";
@@ -61,6 +62,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user!.claims.sub;
 
+      // One company per account. Block re-creation, which would otherwise
+      // re-point the user to a new company and reset the 14-day trial each call.
+      const existingUser = await storage.getUser(userId);
+      if (existingUser?.companyId) {
+        return res.status(409).json({ message: "Your account already has a company." });
+      }
+
       // Validate input
       const companySchema = z.object({
         name: z.string().min(1, "Company name is required"),
@@ -102,7 +110,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // AI KPI generation
-  app.post("/api/kpis/generate", isAuthenticated, async (req: Request, res: Response) => {
+  app.post("/api/kpis/generate", isAuthenticated, aiRateLimiter, async (req: Request, res: Response) => {
     try {
       // Validate input - accept either context object or legacy parameters
       const generateSchema = z
@@ -140,7 +148,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // AI Setup Chat endpoint
-  app.post("/api/setup/chat", isAuthenticated, async (req: Request, res: Response) => {
+  app.post("/api/setup/chat", isAuthenticated, aiRateLimiter, async (req: Request, res: Response) => {
     try {
       const userId = req.user!.claims.sub;
 
@@ -592,6 +600,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Team assignments for the caller's company (current week)
+  app.get("/api/team-assignments", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = req.user!.claims.sub;
+      const company = await storage.getCompanyByUserId(userId);
+      if (!company) {
+        return res.status(404).json({ message: "Company not found" });
+      }
+      const { weekNumber, year } = getCurrentWeekInfo();
+      const assignments = await storage.getTeamAssignments(company.id, weekNumber, year);
+      res.json(assignments);
+    } catch (error) {
+      console.error("Error fetching team assignments:", error);
+      res.status(500).json({ message: "Failed to fetch team assignments" });
+    }
+  });
+
+  // Send reminders for pending assignments (scoped to the caller's company)
+  app.post("/api/team-assignments/remind", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = req.user!.claims.sub;
+      const company = await storage.getCompanyByUserId(userId);
+      if (!company) {
+        return res.status(404).json({ message: "Company not found" });
+      }
+      const remindSchema = z.object({ assignmentIds: z.array(z.number().int()).default([]) });
+      const { assignmentIds } = remindSchema.parse(req.body);
+
+      const { weekNumber, year } = getCurrentWeekInfo();
+      const all = await storage.getTeamAssignments(company.id, weekNumber, year);
+      // Only remind for this company's own pending assignments.
+      const targets = all.filter((a) => assignmentIds.includes(a.id) && a.status === "pending");
+
+      // NOTE: no email/SMS provider is wired for team-member reminders yet, so we
+      // record the intent as an activity and return the count. Hook up a channel here.
+      await storage.createActivity(
+        company.id,
+        userId,
+        "assignment_reminders_sent",
+        `Reminders queued for ${targets.length} pending assignment(s)`
+      );
+
+      res.json({ success: true, count: targets.length });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid input", errors: error.errors });
+      }
+      console.error("Error sending assignment reminders:", error);
+      res.status(500).json({ message: "Failed to send reminders" });
+    }
+  });
+
   // Team assignments
   app.get("/api/team-assignments/:companyId", isAuthenticated, async (req: Request, res: Response) => {
     try {
@@ -849,7 +909,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Test SMS
-  app.post("/api/sms/test", isAuthenticated, async (req: Request, res: Response) => {
+  app.post("/api/sms/test", isAuthenticated, smsRateLimiter, async (req: Request, res: Response) => {
     try {
       const userId = req.user!.claims.sub;
       const company = await storage.getCompanyByUserId(userId);
@@ -859,8 +919,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Validate input
       const testSmsSchema = z.object({
-        phoneNumber: z.string().min(10, "Valid phone number required"),
-        message: z.string().optional(),
+        phoneNumber: z.string().min(10, "Valid phone number required").max(20),
+        message: z.string().max(320, "Message too long").optional(),
       });
 
       const validatedData = testSmsSchema.parse(req.body);
@@ -887,7 +947,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Weekly SMS automation
-  app.post("/api/sms/weekly", isAuthenticated, async (req: Request, res: Response) => {
+  app.post("/api/sms/weekly", isAuthenticated, smsRateLimiter, async (req: Request, res: Response) => {
     try {
       const userId = req.user!.claims.sub;
       const company = await storage.getCompanyByUserId(userId);
@@ -965,7 +1025,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "User email required" });
       }
 
-      const planType = (req.body.planType as "starter" | "professional" | "business") || "starter";
+      const planTypeResult = z
+        .enum(["starter", "professional", "business"])
+        .safeParse(req.body.planType ?? "starter");
+      if (!planTypeResult.success) {
+        return res.status(400).json({ message: "Invalid plan type" });
+      }
+      const planType = planTypeResult.data;
 
       // If user already has an active subscription, upgrade/downgrade the plan
       if (user.stripeSubscriptionId) {
@@ -996,6 +1062,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error creating subscription:", error);
       res.status(500).json({ message: "Failed to create subscription" });
+    }
+  });
+
+  // Current subscription status for the billing page
+  app.get("/api/subscription/status", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = req.user!.claims.sub;
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      if (!user.stripeSubscriptionId) {
+        return res.json({
+          status: user.subscriptionStatus || "trialing",
+          plan: null,
+          cancelAtPeriodEnd: false,
+          trialEndsAt: user.trialEndsAt ?? null,
+        });
+      }
+      const status = await stripeService.getSubscriptionStatus(user.stripeSubscriptionId);
+      res.json(status);
+    } catch (error) {
+      console.error("Error fetching subscription status:", error);
+      res.status(500).json({ message: "Failed to fetch subscription status" });
+    }
+  });
+
+  // Usage stats vs. plan limits for the billing page
+  app.get("/api/usage/stats", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = req.user!.claims.sub;
+      const company = await storage.getCompanyByUserId(userId);
+      if (!company) {
+        return res.status(404).json({ message: "Company not found" });
+      }
+      const [recipients, kpis, deliveries] = await Promise.all([
+        storage.getSmsRecipients(company.id),
+        storage.getKpiDefinitions(company.id),
+        storage.getSmsDeliveryHistory(company.id, 1000),
+      ]);
+      res.json({
+        smsRecipients: recipients.length,
+        kpisConfigured: kpis.filter((k) => k.isActive).length,
+        smsDelivered: deliveries.filter((d) => d.status === "sent").length,
+      });
+    } catch (error) {
+      console.error("Error fetching usage stats:", error);
+      res.status(500).json({ message: "Failed to fetch usage stats" });
+    }
+  });
+
+  // Cancel the current subscription at period end
+  app.post("/api/subscription/cancel", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = req.user!.claims.sub;
+      const user = await storage.getUser(userId);
+      if (!user?.stripeSubscriptionId) {
+        return res.status(400).json({ message: "No active subscription to cancel." });
+      }
+      await stripeService.cancelSubscription(user.stripeSubscriptionId);
+      await storage.createActivity(
+        user.companyId,
+        userId,
+        "subscription_cancel_requested",
+        "Subscription set to cancel at period end"
+      );
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error cancelling subscription:", error);
+      res.status(500).json({ message: "Failed to cancel subscription" });
     }
   });
 
