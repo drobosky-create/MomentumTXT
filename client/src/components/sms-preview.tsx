@@ -64,7 +64,7 @@ export default function SmsPreview({ kpis, snapshots, currentWeek }: SmsPreviewP
       }
     }
 
-    message += "\nPowered by KPIFlow";
+    message += "\nPowered by MomentumTXT";
     return message;
   };
 

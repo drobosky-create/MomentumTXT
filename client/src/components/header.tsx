@@ -20,7 +20,7 @@ export default function Header({ title, subtitle }: HeaderProps) {
     mutationFn: async () => {
       return await apiRequest("POST", "/api/sms/test", {
         phoneNumber: "+1234567890", // This would be replaced with actual test number
-        message: "This is a test SMS from KPIFlow dashboard.",
+        message: "This is a test SMS from MomentumTXT dashboard.",
       });
     },
     onSuccess: () => {

@@ -351,7 +351,7 @@ Industry: ${companyBasic.industry} (NAICS: ${companyBasic.naicsCode})`;
     configData?: Record<string, unknown>;
   }> {
     try {
-      const systemPrompt = `You are a friendly and helpful KPIFlow setup assistant. Your job is to guide users through setting up their business KPI tracking system through natural conversation.
+      const systemPrompt = `You are a friendly and helpful MomentumTXT setup assistant. Your job is to guide users through setting up their business KPI tracking system through natural conversation.
 
 Current setup step: ${conversationState.step}
 Data collected so far: ${JSON.stringify(conversationState.collectedData)}

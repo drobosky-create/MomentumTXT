@@ -14,7 +14,7 @@ export default function SetupHub() {
             <Sparkles className="h-8 w-8 text-primary" />
           </div>
           <h1 className="text-4xl font-bold text-foreground mb-4" data-testid="text-setup-title">
-            Welcome to KPIFlow
+            Welcome to MomentumTXT
           </h1>
           <p
             className="text-lg text-muted-foreground max-w-2xl mx-auto"

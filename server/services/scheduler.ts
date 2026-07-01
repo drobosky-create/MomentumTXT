@@ -137,7 +137,7 @@ class SchedulerService {
       }
     }
 
-    message += "\nPowered by KPIFlow";
+    message += "\nPowered by MomentumTXT";
 
     // Ensure message is under SMS character limit
     if (message.length > 155) {

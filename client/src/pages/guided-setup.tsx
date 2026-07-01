@@ -70,7 +70,7 @@ export default function GuidedSetup() {
       id: "1",
       role: "assistant",
       content:
-        "Hi! I'm your KPIFlow setup assistant. I'll help you get your business metrics tracking up and running in just a few minutes. Let's start with the basics — what's your company name?",
+        "Hi! I'm your MomentumTXT setup assistant. I'll help you get your business metrics tracking up and running in just a few minutes. Let's start with the basics — what's your company name?",
       timestamp: new Date(),
     },
   ]);
@@ -120,7 +120,7 @@ export default function GuidedSetup() {
         queryClient.invalidateQueries({ queryKey: ["/api/kpis"] });
         toast({
           title: "Setup Complete!",
-          description: "Your KPIFlow dashboard is ready to use.",
+          description: "Your MomentumTXT dashboard is ready to use.",
         });
       }
     },
@@ -186,7 +186,7 @@ export default function GuidedSetup() {
               <Sparkles className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h1 className="font-semibold text-foreground">KPIFlow Setup Assistant</h1>
+              <h1 className="font-semibold text-foreground">MomentumTXT Setup Assistant</h1>
               <p className="text-sm text-muted-foreground">Guided configuration</p>
             </div>
           </div>

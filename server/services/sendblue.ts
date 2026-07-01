@@ -123,7 +123,7 @@ class SendblueService {
       message += line + "\n";
     }
 
-    message += "\nPowered by KPIFlow";
+    message += "\nPowered by MomentumTXT";
 
     if (message.length > 155) {
       message = message.substring(0, 152) + "...";
