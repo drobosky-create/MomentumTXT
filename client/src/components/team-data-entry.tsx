@@ -90,7 +90,7 @@ export default function TeamDataEntry({ currentWeek }: TeamDataEntryProps) {
           variant: "destructive",
         });
         setTimeout(() => {
-          window.location.href = "/api/login";
+          window.location.href = "/sign-in";
         }, 500);
         return;
       }
@@ -128,7 +128,7 @@ export default function TeamDataEntry({ currentWeek }: TeamDataEntryProps) {
           variant: "destructive",
         });
         setTimeout(() => {
-          window.location.href = "/api/login";
+          window.location.href = "/sign-in";
         }, 500);
         return;
       }

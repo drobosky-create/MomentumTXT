@@ -60,7 +60,7 @@ export default function KpiConfig() {
         variant: "destructive",
       });
       setTimeout(() => {
-        window.location.href = "/api/login";
+        window.location.href = "/sign-in";
       }, 500);
       return;
     }
@@ -84,7 +84,7 @@ export default function KpiConfig() {
         variant: "destructive",
       });
       setTimeout(() => {
-        window.location.href = "/api/login";
+        window.location.href = "/sign-in";
       }, 500);
     }
   }, [error, toast]);
@@ -109,7 +109,7 @@ export default function KpiConfig() {
           variant: "destructive",
         });
         setTimeout(() => {
-          window.location.href = "/api/login";
+          window.location.href = "/sign-in";
         }, 500);
         return;
       }
@@ -143,7 +143,7 @@ export default function KpiConfig() {
           variant: "destructive",
         });
         setTimeout(() => {
-          window.location.href = "/api/login";
+          window.location.href = "/sign-in";
         }, 500);
         return;
       }
@@ -176,7 +176,7 @@ export default function KpiConfig() {
           variant: "destructive",
         });
         setTimeout(() => {
-          window.location.href = "/api/login";
+          window.location.href = "/sign-in";
         }, 500);
         return;
       }
@@ -208,7 +208,7 @@ export default function KpiConfig() {
           variant: "destructive",
         });
         setTimeout(() => {
-          window.location.href = "/api/login";
+          window.location.href = "/sign-in";
         }, 500);
         return;
       }

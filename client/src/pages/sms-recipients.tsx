@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -46,7 +47,7 @@ export default function SmsRecipients() {
         variant: "destructive",
       });
       setTimeout(() => {
-        window.location.href = "/api/login";
+        window.location.href = "/sign-in";
       }, 500);
       return;
     }
@@ -75,7 +76,7 @@ export default function SmsRecipients() {
         variant: "destructive",
       });
       setTimeout(() => {
-        window.location.href = "/api/login";
+        window.location.href = "/sign-in";
       }, 500);
     }
   }, [error, toast]);
@@ -101,7 +102,7 @@ export default function SmsRecipients() {
           variant: "destructive",
         });
         setTimeout(() => {
-          window.location.href = "/api/login";
+          window.location.href = "/sign-in";
         }, 500);
         return;
       }
@@ -134,7 +135,7 @@ export default function SmsRecipients() {
           variant: "destructive",
         });
         setTimeout(() => {
-          window.location.href = "/api/login";
+          window.location.href = "/sign-in";
         }, 500);
         return;
       }
@@ -165,7 +166,7 @@ export default function SmsRecipients() {
           variant: "destructive",
         });
         setTimeout(() => {
-          window.location.href = "/api/login";
+          window.location.href = "/sign-in";
         }, 500);
         return;
       }
@@ -182,7 +183,7 @@ export default function SmsRecipients() {
       const response = await apiRequest("POST", "/api/sms/test", {
         phoneNumber,
         message:
-          "This is a test message from KPIFlow. Your SMS notifications are configured correctly!",
+          "This is a test message from MomentumTXT. Your SMS notifications are configured correctly!",
       });
       return await response.json();
     },
@@ -200,7 +201,7 @@ export default function SmsRecipients() {
           variant: "destructive",
         });
         setTimeout(() => {
-          window.location.href = "/api/login";
+          window.location.href = "/sign-in";
         }, 500);
         return;
       }

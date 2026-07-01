@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useClerk } from "@clerk/clerk-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest } from "@/lib/queryClient";
@@ -91,6 +92,7 @@ export default function SetupWizard() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { signOut } = useClerk();
 
   // Check for pre-filled data from landing page or existing user data
   const getPrefilledData = (): SetupData => {
@@ -356,7 +358,7 @@ export default function SetupWizard() {
       if (isExistingUser) {
         window.location.href = "/";
       } else {
-        window.location.href = "/api/logout";
+        signOut({ redirectUrl: "/" });
       }
     }
   };

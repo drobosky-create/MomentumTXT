@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
+import { useClerk } from "@clerk/clerk-react";
 import { cn } from "@/lib/utils";
+import { Logo } from "@/components/ui/logo";
 import { useAuth } from "@/hooks/useAuth";
 import {
-  BarChart3,
   Gauge,
   Sliders,
   Users,
@@ -32,6 +33,7 @@ const secondaryNavigation = [
 export default function Sidebar() {
   const [location] = useLocation();
   const { user } = useAuth();
+  const { signOut } = useClerk();
   const [showUserMenu, setShowUserMenu] = useState(false);
 
   const isActive = (href: string) => {
@@ -46,19 +48,7 @@ export default function Sidebar() {
       <div className="flex flex-col flex-1 min-h-0">
         {/* Logo/Brand */}
         <div className="flex items-center flex-shrink-0 px-6 py-6 border-b border-border">
-          <div className="flex items-center">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center mr-3">
-              <BarChart3 className="h-5 w-5 text-primary-foreground" />
-            </div>
-            <div>
-              <h1 className="text-lg font-semibold text-foreground" data-testid="text-app-name">
-                KPIFlow
-              </h1>
-              <p className="text-xs text-muted-foreground" data-testid="text-company-name">
-                KPIFlow
-              </p>
-            </div>
-          </div>
+          <Logo size={36} wordmarkClassName="text-lg" />
         </div>
 
         {/* Navigation */}
@@ -149,7 +139,7 @@ export default function Sidebar() {
             <div className="mt-2 py-2 bg-popover border border-border rounded-md shadow-lg">
               <button
                 className="w-full px-3 py-2 text-left text-sm text-muted-foreground hover:text-foreground hover:bg-accent/50"
-                onClick={() => (window.location.href = "/api/logout")}
+                onClick={() => signOut({ redirectUrl: "/" })}
                 data-testid="button-logout"
               >
                 Logout

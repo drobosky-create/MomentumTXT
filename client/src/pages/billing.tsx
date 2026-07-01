@@ -96,7 +96,7 @@ export default function Billing() {
         variant: "destructive",
       });
       setTimeout(() => {
-        window.location.href = "/api/login";
+        window.location.href = "/sign-in";
       }, 500);
       return;
     }
@@ -125,7 +125,7 @@ export default function Billing() {
         variant: "destructive",
       });
       setTimeout(() => {
-        window.location.href = "/api/login";
+        window.location.href = "/sign-in";
       }, 500);
     }
   }, [error, toast]);
@@ -155,7 +155,7 @@ export default function Billing() {
           variant: "destructive",
         });
         setTimeout(() => {
-          window.location.href = "/api/login";
+          window.location.href = "/sign-in";
         }, 500);
         return;
       }
@@ -204,7 +204,7 @@ export default function Billing() {
           variant: "destructive",
         });
         setTimeout(() => {
-          window.location.href = "/api/login";
+          window.location.href = "/sign-in";
         }, 500);
         return;
       }
@@ -269,7 +269,7 @@ export default function Billing() {
                     </p>
                     <p className="text-sm text-orange-600 dark:text-orange-400">
                       Your free trial ends in {trialDaysRemaining} days. Upgrade to continue using
-                      KPIFlow.
+                      MomentumTXT.
                     </p>
                   </div>
                   <Button

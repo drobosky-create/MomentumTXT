@@ -9,14 +9,14 @@ npm run dev          # Start dev server (Express + Vite on port 5000)
 npx tsc --noEmit     # Type check
 ```
 
-**Required env vars:** `DATABASE_URL`, `AUTH0_DOMAIN`, `AUTH0_CLIENT_ID`, `AUTH0_CLIENT_SECRET`, `STRIPE_SECRET_KEY`, `VITE_STRIPE_PUBLIC_KEY`, `KPIFLOWKEY` (OpenAI key), `SENDBLUE_API_KEY_ID`, `SENDBLUE_API_SECRET_KEY` (optional — SMS disabled if missing)
+**Required env vars:** `DATABASE_URL`, `VITE_CLERK_PUBLISHABLE_KEY`, `CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, `STRIPE_SECRET_KEY`, `VITE_STRIPE_PUBLIC_KEY`, `KPIFLOWKEY` (OpenAI key), `SENDBLUE_API_KEY_ID`, `SENDBLUE_API_SECRET_KEY` (optional — SMS disabled if missing)
 
 ## Stack
 
 - **Frontend:** React 18 + TypeScript, Wouter routing, TanStack Query v5, shadcn/ui + Radix UI, Tailwind CSS
 - **Backend:** Express.js + TypeScript, Drizzle ORM, node-cron
 - **Database:** PostgreSQL (Neon)
-- **Auth:** Auth0 (OpenID Connect via `server/auth0.ts`)
+- **Auth:** Clerk (`@clerk/express` on the server via `server/clerk.ts`, `@clerk/clerk-react` on the client)
 - **Build:** Vite (frontend) + ESBuild (backend)
 
 ## Where things live
@@ -29,10 +29,10 @@ client/src/
   hooks/          # useAuth, use-toast, use-mobile
   lib/            # queryClient, authUtils, design-system, utils
 server/
-  auth0.ts        # Auth0 OIDC setup + isAuthenticated middleware
+  clerk.ts        # Clerk middleware + isAuthenticated (lazy-syncs Clerk users into DB)
   routes.ts       # All API endpoints (~1000 lines)
   storage.ts      # Database access layer (IStorage interface)
-  services/       # openai.ts, twilio.ts, stripe.ts, scheduler.ts
+  services/       # openai.ts, sendblue.ts, stripe.ts, scheduler.ts
 shared/
   schema.ts       # Drizzle schema + Zod insert schemas + types
   industryConfig.ts # Industry field rules for setup wizard
@@ -40,7 +40,7 @@ shared/
 
 ## Architecture decisions
 
-- **Auth:** Auth0 (not Replit auth) — `server/auth0.ts` is the only auth file; `replitAuth.ts` was removed
+- **Auth:** Clerk — `server/clerk.ts` is the only auth file. `isAuthenticated` reads the Clerk session, lazily upserts the user into the DB on first request, and exposes `req.user.claims` (same shape the routes expected under the old Auth0 setup, so route handlers are unchanged). Frontend uses `<ClerkProvider>` + `/sign-in` and `/sign-up` pages. (Migrated from Auth0; `replitAuth.ts` was removed earlier.)
 - **Stripe flow:** Frontend calls `/api/create-subscription` → gets `clientSecret` → passes to `Elements` → `PaymentElement` + `confirmPayment` with `redirect: "if_required"`
 - **Stripe env vars:** Backend uses `STRIPE_SECRET_KEY`; frontend uses `VITE_STRIPE_PUBLIC_KEY`
 - **OpenAI key:** Stored as `KPIFLOWKEY` (custom name — see `server/services/openai.ts`)

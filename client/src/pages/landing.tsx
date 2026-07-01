@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, BarChart3, Smartphone, Users, Zap, TrendingUp } from "lucide-react";
+import { Logo } from "@/components/ui/logo";
 
 const industries = [
   { code: "54", name: "Professional Services" },
@@ -104,8 +105,8 @@ export default function Landing() {
       sessionStorage.setItem("setupWizardData", JSON.stringify(setupData));
     }
 
-    // Redirect to login to start the onboarding process
-    window.location.href = "/api/login";
+    // Redirect to sign-up to start the onboarding process
+    window.location.href = "/sign-up";
   };
 
   return (
@@ -114,16 +115,11 @@ export default function Landing() {
       <header className="border-b border-border bg-card/50 backdrop-blur">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <BarChart3 className="h-5 w-5 text-primary-foreground" />
-              </div>
-              <h1 className="text-xl font-bold text-foreground">KPIFlow</h1>
-            </div>
+            <Logo size={36} wordmarkClassName="text-xl" />
             <div className="flex items-center space-x-4">
               <Button
                 variant="ghost"
-                onClick={() => (window.location.href = "/api/login")}
+                onClick={() => (window.location.href = "/sign-in")}
                 data-testid="button-login"
               >
                 Login
@@ -356,14 +352,11 @@ export default function Landing() {
       {/* Footer */}
       <footer className="border-t border-border bg-card/50 py-8 px-4">
         <div className="container mx-auto text-center">
-          <div className="flex items-center justify-center space-x-3 mb-4">
-            <div className="w-6 h-6 bg-primary rounded flex items-center justify-center">
-              <BarChart3 className="h-4 w-4 text-primary-foreground" />
-            </div>
-            <span className="font-semibold text-foreground">KPIFlow</span>
+          <div className="flex items-center justify-center mb-4">
+            <Logo size={28} wordmarkClassName="text-base" />
           </div>
           <p className="text-sm text-muted-foreground" data-testid="text-footer-copyright">
-            © 2025 KPIFlow. Built for 17.8 million US businesses.
+            © 2025 MomentumTXT. Built for 17.8 million US businesses.
           </p>
         </div>
       </footer>

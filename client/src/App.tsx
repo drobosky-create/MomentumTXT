@@ -5,6 +5,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import Landing from "@/pages/landing";
+import SignInPage from "@/pages/sign-in";
+import SignUpPage from "@/pages/sign-up";
 import Dashboard from "@/pages/dashboard";
 import SetupHub from "@/pages/setup-hub";
 import SetupWizard from "@/pages/setup-wizard";
@@ -21,10 +23,24 @@ function Router() {
   // Check if user needs setup (no company associated)
   const needsSetup = isAuthenticated && user && !user.companyId;
 
-  // Unauthenticated users see landing page for all routes
-  if (isLoading || !isAuthenticated) {
+  // While Clerk (and the app user) resolve, show a loader to avoid flashing Landing.
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div
+          className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full"
+          aria-label="Loading"
+        />
+      </div>
+    );
+  }
+
+  // Unauthenticated users see the landing page, plus the Clerk auth routes.
+  if (!isAuthenticated) {
     return (
       <Switch>
+        <Route path="/sign-in" component={SignInPage} />
+        <Route path="/sign-up" component={SignUpPage} />
         <Route path="/" component={Landing} />
         <Route component={Landing} />
       </Switch>

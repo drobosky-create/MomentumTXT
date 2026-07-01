@@ -1,7 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./auth0";
+import { setupAuth, isAuthenticated } from "./clerk";
 import { openaiService } from "./services/openai";
 import { sendblueService } from "./services/sendblue";
 import { stripeService } from "./services/stripe";
@@ -866,7 +866,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = testSmsSchema.parse(req.body);
       const result = await sendblueService.sendSMS(
         validatedData.phoneNumber,
-        validatedData.message || "This is a test SMS from KPIFlow."
+        validatedData.message || "This is a test SMS from MomentumTXT."
       );
 
       await storage.createActivity(
@@ -1045,6 +1045,6 @@ function formatWeeklySMS(kpis: KpiDefinition[], snapshots: KpiSnapshot[], weekNu
     }
   }
 
-  message += "\nPowered by KPIFlow";
+  message += "\nPowered by MomentumTXT";
   return message;
 }
