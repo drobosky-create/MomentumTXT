@@ -107,6 +107,9 @@ export const smsRecipients = pgTable("sms_recipients", {
   name: varchar("name", { length: 255 }).notNull(),
   phoneNumber: varchar("phone_number", { length: 20 }).notNull(),
   isActive: boolean("is_active").default(true),
+  // TCPA opt-out: set when a recipient replies STOP; suppresses all sends.
+  optedOut: boolean("opted_out").default(false).notNull(),
+  optedOutAt: timestamp("opted_out_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -121,6 +124,7 @@ export const smsDeliveryLog = pgTable(
     recipientId: integer("recipient_id").references(() => smsRecipients.id),
     messageContent: text("message_content").notNull(),
     status: varchar("status", { length: 50 }).notNull(),
+    messageHandle: varchar("message_handle", { length: 255 }),
     errorMessage: text("error_message"),
     weekNumber: integer("week_number"),
     year: integer("year"),

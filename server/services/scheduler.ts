@@ -94,16 +94,35 @@ class SchedulerService {
     // Format the SMS message
     const message = this.formatWeeklySMS(kpis, snapshots, weekNumber);
 
-    // Send SMS to all recipients
+    // Send SMS to all recipients who haven't opted out (TCPA)
+    let sentCount = 0;
     for (const recipient of recipients) {
+      if (recipient.optedOut) continue;
       try {
         const result = await sendblueService.sendSMS(recipient.phoneNumber, message);
-        await storage.logSmsDelivery(companyId, recipient.id, message, "sent", weekNumber, year);
-
+        await storage.logSmsDelivery(
+          companyId,
+          recipient.id,
+          message,
+          "sent",
+          weekNumber,
+          year,
+          result.messageHandle
+        );
+        sentCount++;
         console.log(`SMS sent to ${recipient.name} (${recipient.phoneNumber}): ${result.messageHandle}`);
       } catch (error: unknown) {
         console.error(`Failed to send SMS to ${recipient.name}:`, error);
-        await storage.logSmsDelivery(companyId, recipient.id, message, "failed", weekNumber, year);
+        await storage.logSmsDelivery(
+          companyId,
+          recipient.id,
+          message,
+          "failed",
+          weekNumber,
+          year,
+          null,
+          error instanceof Error ? error.message : "send failed"
+        );
       }
     }
 
@@ -112,7 +131,7 @@ class SchedulerService {
       companyId,
       null,
       "weekly_sms_automated",
-      `Automated weekly SMS sent to ${recipients.length} recipients for week ${weekNumber}`
+      `Automated weekly SMS sent to ${sentCount} recipient(s) for week ${weekNumber}`
     );
   }
 

@@ -14,9 +14,21 @@ interface SMSResult {
   body: string;
 }
 
+// TCPA-standard keywords carriers recognize for opt-out / opt-in.
+const OPT_OUT_KEYWORDS = ["stop", "stopall", "unsubscribe", "cancel", "end", "quit"];
+const OPT_IN_KEYWORDS = ["start", "unstop", "yes"];
+
 class SendblueService {
   private isConfigured(): boolean {
     return !!(apiKeyId && apiSecretKey);
+  }
+
+  isOptOutKeyword(message: string): boolean {
+    return OPT_OUT_KEYWORDS.includes(message.trim().toLowerCase());
+  }
+
+  isOptInKeyword(message: string): boolean {
+    return OPT_IN_KEYWORDS.includes(message.trim().toLowerCase());
   }
 
   async sendSMS(to: string, body: string): Promise<SMSResult> {

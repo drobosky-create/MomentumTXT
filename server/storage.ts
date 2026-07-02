@@ -39,7 +39,7 @@ export interface ActivityMetadata {
 }
 
 import { db } from "./db";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, sql } from "drizzle-orm";
 
 export interface IStorage {
   // User operations (mandatory for Replit Auth)
@@ -74,6 +74,8 @@ export interface IStorage {
   createSmsRecipient(recipient: InsertSmsRecipient): Promise<SmsRecipient>;
   updateSmsRecipient(id: number, updates: Partial<InsertSmsRecipient>): Promise<SmsRecipient>;
   deleteSmsRecipient(id: number): Promise<void>;
+  setOptOutByPhone(phoneNumber: string, optedOut: boolean): Promise<number>;
+  isPhoneOptedOut(phoneNumber: string): Promise<boolean>;
 
   // SMS delivery
   logSmsDelivery(
@@ -82,8 +84,15 @@ export interface IStorage {
     content: string,
     status: string,
     weekNumber: number,
-    year: number
+    year: number,
+    messageHandle?: string | null,
+    errorMessage?: string | null
   ): Promise<SmsDeliveryLog>;
+  updateDeliveryStatusByHandle(
+    messageHandle: string,
+    status: string,
+    errorMessage?: string | null
+  ): Promise<void>;
   getSmsDeliveryHistory(companyId: string, limit?: number): Promise<SmsDeliveryLog[]>;
 
   // Team assignments
@@ -311,6 +320,36 @@ export class DatabaseStorage implements IStorage {
     await db.update(smsRecipients).set({ isActive: false }).where(eq(smsRecipients.id, id));
   }
 
+  // Flip opt-out for every recipient matching the last 10 digits of the phone
+  // (numbers may be stored in varying formats). Returns the number of rows changed.
+  async setOptOutByPhone(phoneNumber: string, optedOut: boolean): Promise<number> {
+    const digits = phoneNumber.replace(/\D/g, "").slice(-10);
+    if (digits.length < 10) return 0;
+    const result = await db
+      .update(smsRecipients)
+      .set({ optedOut, optedOutAt: optedOut ? new Date() : null })
+      .where(
+        sql`right(regexp_replace(${smsRecipients.phoneNumber}, '[^0-9]', '', 'g'), 10) = ${digits}`
+      )
+      .returning({ id: smsRecipients.id });
+    return result.length;
+  }
+
+  async isPhoneOptedOut(phoneNumber: string): Promise<boolean> {
+    const digits = phoneNumber.replace(/\D/g, "").slice(-10);
+    if (digits.length < 10) return false;
+    const rows = await db
+      .select({ id: smsRecipients.id })
+      .from(smsRecipients)
+      .where(
+        and(
+          eq(smsRecipients.optedOut, true),
+          sql`right(regexp_replace(${smsRecipients.phoneNumber}, '[^0-9]', '', 'g'), 10) = ${digits}`
+        )
+      );
+    return rows.length > 0;
+  }
+
   // SMS delivery
   async logSmsDelivery(
     companyId: string,
@@ -318,7 +357,9 @@ export class DatabaseStorage implements IStorage {
     content: string,
     status: string,
     weekNumber: number,
-    year: number
+    year: number,
+    messageHandle?: string | null,
+    errorMessage?: string | null
   ): Promise<SmsDeliveryLog> {
     const [log] = await db
       .insert(smsDeliveryLog)
@@ -329,9 +370,23 @@ export class DatabaseStorage implements IStorage {
         status,
         weekNumber,
         year,
+        messageHandle: messageHandle ?? null,
+        errorMessage: errorMessage ?? null,
       })
       .returning();
     return log;
+  }
+
+  // Update a delivery log row when Sendblue reports final status via webhook.
+  async updateDeliveryStatusByHandle(
+    messageHandle: string,
+    status: string,
+    errorMessage?: string | null
+  ): Promise<void> {
+    await db
+      .update(smsDeliveryLog)
+      .set({ status, errorMessage: errorMessage ?? null })
+      .where(eq(smsDeliveryLog.messageHandle, messageHandle));
   }
 
   async getSmsDeliveryHistory(companyId: string, limit = 50): Promise<SmsDeliveryLog[]> {

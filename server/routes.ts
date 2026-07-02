@@ -924,6 +924,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const validatedData = testSmsSchema.parse(req.body);
+
+      if (await storage.isPhoneOptedOut(validatedData.phoneNumber)) {
+        return res
+          .status(403)
+          .json({ message: "This number has opted out of messages and cannot be texted." });
+      }
+
       const result = await sendblueService.sendSMS(
         validatedData.phoneNumber,
         validatedData.message || "This is a test SMS from MomentumTXT."
@@ -975,25 +982,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const message = formatWeeklySMS(kpis, snapshots, currentWeek);
 
+      let sentCount = 0;
       for (const recipient of recipients) {
+        if (recipient.optedOut) continue; // TCPA: never message opted-out recipients
         try {
-          await sendblueService.sendSMS(recipient.phoneNumber, message);
+          const result = await sendblueService.sendSMS(recipient.phoneNumber, message);
           await storage.logSmsDelivery(
             company.id,
             recipient.id,
             message,
             "sent",
             currentWeek,
-            currentYear
+            currentYear,
+            result.messageHandle
           );
-        } catch {
+          sentCount++;
+        } catch (err) {
           await storage.logSmsDelivery(
             company.id,
             recipient.id,
             message,
             "failed",
             currentWeek,
-            currentYear
+            currentYear,
+            null,
+            err instanceof Error ? err.message : "send failed"
           );
         }
       }
@@ -1002,16 +1015,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
         company.id,
         userId,
         "weekly_sms_sent",
-        `Weekly SMS sent to ${recipients.length} recipients`
+        `Weekly SMS sent to ${sentCount} recipient(s)`
       );
 
-      res.json({ success: true, recipients: recipients.length });
+      res.json({ success: true, recipients: sentCount });
     } catch (error) {
       console.error("Error sending weekly SMS:", error);
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid input", errors: error.errors });
       }
       res.status(500).json({ message: "Failed to send weekly SMS" });
+    }
+  });
+
+  // --- Sendblue webhooks (public; guarded by a shared secret) ---
+  // Configure these URLs in the Sendblue dashboard with ?token=<SENDBLUE_WEBHOOK_SECRET>.
+  const verifySendblueWebhook = (req: Request, res: Response): boolean => {
+    const secret = process.env.SENDBLUE_WEBHOOK_SECRET;
+    if (!secret) {
+      console.warn("SENDBLUE_WEBHOOK_SECRET not set — rejecting Sendblue webhook.");
+      res.status(503).json({ message: "Webhook not configured" });
+      return false;
+    }
+    const token = req.query.token ?? req.headers["x-webhook-token"];
+    if (token !== secret) {
+      res.status(401).json({ message: "Unauthorized" });
+      return false;
+    }
+    return true;
+  };
+
+  // Inbound messages — honor STOP/START keywords (TCPA opt-out/opt-in)
+  app.post("/api/sendblue/inbound", async (req: Request, res: Response) => {
+    if (!verifySendblueWebhook(req, res)) return;
+    try {
+      const fromNumber = String(req.body.number || req.body.from_number || "");
+      const content = String(req.body.content || "");
+      if (!fromNumber || !content) {
+        return res.json({ received: true });
+      }
+
+      if (sendblueService.isOptOutKeyword(content)) {
+        const count = await storage.setOptOutByPhone(fromNumber, true);
+        console.log(`SMS opt-out: ${fromNumber} matched ${count} recipient(s)`);
+        // One-time opt-out confirmation is permitted; best-effort only.
+        try {
+          await sendblueService.sendSMS(
+            fromNumber,
+            "You've been unsubscribed from MomentumTXT. Reply START to resubscribe."
+          );
+        } catch {
+          /* ignore confirmation failures */
+        }
+      } else if (sendblueService.isOptInKeyword(content)) {
+        const count = await storage.setOptOutByPhone(fromNumber, false);
+        console.log(`SMS opt-in: ${fromNumber} matched ${count} recipient(s)`);
+      }
+
+      res.json({ received: true });
+    } catch (error) {
+      console.error("Sendblue inbound webhook error:", error);
+      res.status(500).json({ message: "Webhook processing failed" });
+    }
+  });
+
+  // Delivery status callbacks — update the delivery log by message handle
+  app.post("/api/sendblue/status", async (req: Request, res: Response) => {
+    if (!verifySendblueWebhook(req, res)) return;
+    try {
+      const handle = String(req.body.message_handle || "");
+      const status = String(req.body.status || "").toLowerCase();
+      const errorMessage = req.body.error_message ? String(req.body.error_message) : null;
+      if (handle && status) {
+        await storage.updateDeliveryStatusByHandle(handle, status, errorMessage);
+      }
+      res.json({ received: true });
+    } catch (error) {
+      console.error("Sendblue status webhook error:", error);
+      res.status(500).json({ message: "Webhook processing failed" });
     }
   });
 
