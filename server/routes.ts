@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./clerk";
 import { smsRateLimiter, aiRateLimiter } from "./middleware/rateLimit";
+import { emailService } from "./services/email";
 import { openaiService } from "./services/openai";
 import { sendblueService } from "./services/sendblue";
 import { stripeService } from "./services/stripe";
@@ -633,16 +634,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Only remind for this company's own pending assignments.
       const targets = all.filter((a) => assignmentIds.includes(a.id) && a.status === "pending");
 
-      // NOTE: no email/SMS provider is wired for team-member reminders yet, so we
-      // record the intent as an activity and return the count. Hook up a channel here.
+      // Group pending KPIs per assignee so each person gets a single email.
+      const kpis = await storage.getKpiDefinitions(company.id);
+      const kpiName = (id: number) =>
+        kpis.find((k) => k.id === id)?.displayName || `KPI #${id}`;
+      const byUser = new Map<string, string[]>();
+      for (const a of targets) {
+        const list = byUser.get(a.userId) ?? [];
+        list.push(kpiName(a.kpiDefinitionId));
+        byUser.set(a.userId, list);
+      }
+
+      let sent = 0;
+      for (const [assigneeId, kpiNames] of Array.from(byUser.entries())) {
+        const assignee = await storage.getUser(assigneeId);
+        if (!assignee?.email) continue;
+        try {
+          const result = await emailService.sendAssignmentReminder(assignee.email, {
+            name: assignee.firstName,
+            companyName: company.name,
+            kpiNames,
+            weekNumber,
+          });
+          if (!result.skipped) sent++;
+        } catch (err) {
+          console.error(`Failed to send reminder to ${assignee.email}:`, err);
+        }
+      }
+
       await storage.createActivity(
         company.id,
         userId,
         "assignment_reminders_sent",
-        `Reminders queued for ${targets.length} pending assignment(s)`
+        `Reminder emails sent to ${sent} team member(s)`
       );
 
-      res.json({ success: true, count: targets.length });
+      res.json({ success: true, count: sent });
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid input", errors: error.errors });
